@@ -1,19 +1,29 @@
 
-import React, { useEffect, useState } from "react";
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  BrowserRouter,
+  Link,
+  Route,
+  Routes,
+} from "react-router-dom";
+
 import "./index.css";
 
-const API_URL = "http://localhost:3000/api/tasks";
+const API_URL =
+  "https://task-api-337b.rollout.click/api/tasks";
 
+// Dashboard Component
 function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  async function fetchTasks() {
+  // Fetch Tasks
+  const fetchTasks = async () => {
     try {
       setLoading(true);
+      setError("");
 
       const response = await fetch(API_URL);
 
@@ -22,22 +32,23 @@ function Dashboard() {
       }
 
       const data = await response.json();
-
-      setTasks(data.tasks);
-      setError("");
+      setTasks(data);
     } catch (err) {
-      setError("Unable to connect to the API.");
+      setError(
+        "Unable to connect to the backend."
+      );
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     fetchTasks();
   }, []);
 
-  async function addTask(event) {
-    event.preventDefault();
+  // Add Task
+  const addTask = async (e) => {
+    e.preventDefault();
 
     if (!title.trim()) {
       return;
@@ -50,7 +61,7 @@ function Dashboard() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: title.trim(),
+          title: title,
         }),
       });
 
@@ -63,35 +74,17 @@ function Dashboard() {
     } catch (err) {
       setError("Unable to add task.");
     }
-  }
+  };
 
-  async function toggleTask(task) {
+  // Delete Task
+  const deleteTask = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/${task.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          completed: !task.completed,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update task");
-      }
-
-      fetchTasks();
-    } catch (err) {
-      setError("Unable to update task.");
-    }
-  }
-
-  async function deleteTask(id) {
-    try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${API_URL}/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to delete task");
@@ -101,112 +94,140 @@ function Dashboard() {
     } catch (err) {
       setError("Unable to delete task.");
     }
-  }
+  };
+
+  // Toggle Task
+  const toggleTask = async (task) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/${task.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            completed: !task.completed,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update task");
+      }
+
+      fetchTasks();
+    } catch (err) {
+      setError("Unable to update task.");
+    }
+  };
 
   return (
-    <main className="container">
-      <section className="hero">
-        <p className="eyebrow">TASK MANAGEMENT</p>
+    <div className="container">
+      <h1>Task Management App</h1>
 
-        <h1>Organize your day.</h1>
-
-        <p>
-          Manage your tasks using React and a REST API.
-        </p>
-      </section>
-
-      <form className="task-form" onSubmit={addTask}>
+      <form onSubmit={addTask}>
         <input
           type="text"
-          placeholder="Enter a new task..."
+          placeholder="Enter a new task"
           value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          onChange={(e) =>
+            setTitle(e.target.value)
+          }
         />
 
-        <button type="submit">Add Task</button>
+        <button type="submit">
+          Add Task
+        </button>
       </form>
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <p className="error">
+          {error}
+        </p>
+      )}
 
-      <section className="task-card">
-        <div className="section-heading">
-          <h2>Your Tasks</h2>
+      {loading ? (
+        <p>Loading tasks...</p>
+      ) : tasks.length === 0 ? (
+        <p>No tasks found.</p>
+      ) : (
+        <ul>
+          {tasks.map((task) => (
+            <li key={task.id}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Boolean(task.completed)}
+                  onChange={() =>
+                    toggleTask(task)
+                  }
+                />
 
-          <span>{tasks.length} tasks</span>
-        </div>
-
-        {loading ? (
-          <p>Loading tasks...</p>
-        ) : tasks.length === 0 ? (
-          <p className="empty">
-            No tasks yet. Add your first task!
-          </p>
-        ) : (
-          <div className="task-list">
-            {tasks.map((task) => (
-              <div className="task-item" key={task.id}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => toggleTask(task)}
-                  />
-
-                  <span
-                    className={
-                      task.completed ? "completed" : ""
-                    }
-                  >
-                    {task.title}
-                  </span>
-                </label>
-
-                <button
-                  className="delete-btn"
-                  onClick={() => deleteTask(task.id)}
+                <span
+                  style={{
+                    textDecoration: task.completed
+                      ? "line-through"
+                      : "none",
+                  }}
                 >
-                  Delete
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
+                  {task.title}
+                </span>
+              </label>
+
+              <button
+                onClick={() =>
+                  deleteTask(task.id)
+                }
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
+// About Component
 function About() {
   return (
-    <main className="container">
-      <section className="task-card">
-        <h1>About This App</h1>
+    <div className="container">
+      <h1>About Task App</h1>
 
-        <p>
-          This single-page application uses React,
-          React Router, Node.js, and SQLite.
-        </p>
-      </section>
-    </main>
+      <p>
+        This is a Task Management Application
+        built using React and Express.
+      </p>
+
+      <p>
+        Users can add, update, and delete tasks.
+      </p>
+    </div>
   );
 }
 
+// Main App
 function App() {
   return (
     <BrowserRouter>
-      <nav className="navbar">
-        <Link to="/">TaskFlow</Link>
-
-        <div>
-          <Link to="/">Dashboard</Link>
-          <Link to="/about">About</Link>
-        </div>
+      <nav>
+        <Link to="/">Dashboard</Link>
+        {" | "}
+        <Link to="/about">About</Link>
       </nav>
 
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route
+          path="/"
+          element={<Dashboard />}
+        />
 
-        <Route path="/about" element={<About />} />
+        <Route
+          path="/about"
+          element={<About />}
+        />
       </Routes>
     </BrowserRouter>
   );
