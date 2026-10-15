@@ -1,5 +1,4 @@
-
-const API_URL = "http://localhost:8080";
+const API_URL = "https://task-management-api-production-4f06.up.railway.app";
 
 export async function getTasks() {
   const response = await fetch(`${API_URL}/api/tasks`);
